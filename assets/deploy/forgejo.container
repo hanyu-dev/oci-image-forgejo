@@ -1,0 +1,40 @@
+[Unit]
+Description=Forgejo Container Service
+RequiresMountsFor=%t/containers
+
+[Container]
+# ================================
+# * Basic settings
+# ================================
+ContainerName=forgejo
+Image=ghcr.io/hanyu-dev/oci-image-forgejo:16
+AutoUpdate=registry
+RunInit=true
+
+# ================================
+# * Security settings
+# ================================
+UserNS=keep-id:uid=65532,gid=65532
+NoNewPrivileges=true
+DropCapability=ALL
+# AddCapability=CAP_NET_BIND_SERVICE
+
+# ================================
+# * Network settings
+# ================================
+# Network=container-br0.network
+# PublishPort=8022:8022
+
+# ================================
+# * Persistent settings
+# ================================
+Volume=%h/.local/share/forgejo/custom:/opt/forgejo/custom
+Volume=%h/.local/share/forgejo/data:/opt/forgejo/data
+# Volume=/data/git:/data/git
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
