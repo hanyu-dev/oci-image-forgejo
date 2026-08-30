@@ -10,15 +10,27 @@ PUSH=false
 IMAGE_FORGEJO_VERSION="${IMAGE_FORGEJO_VERSION:-}"
 IMAGE_BUILD_REVISION="${IMAGE_BUILD_REVISION:-}"
 
-IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
 IMAGE_NAME="${IMAGE_NAME:-}"
-IMAGE_BUILD_PLATFORMS="${IMAGE_BUILD_PLATFORMS:-linux/amd64}"
+IMAGE_REGISTRY="${IMAGE_REGISTRY:-}"
+IMAGE_BUILD_TARGET_GOARCHS="${IMAGE_BUILD_TARGET_GOARCHS:-amd64}"
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 	--push)
 		PUSH=true
 		shift
+		;;
+	--image-name)
+		IMAGE_NAME="$2"
+		shift 2
+		;;
+	--image-registry)
+		IMAGE_REGISTRY="$2"
+		shift 2
+		;;
+	--image-build-target-goarchs)
+		IMAGE_BUILD_TARGET_GOARCHS="$2"
+		shift 2
 		;;
 	--image-forgejo-version)
 		IMAGE_FORGEJO_VERSION="$2"
@@ -28,18 +40,6 @@ while [[ $# -gt 0 ]]; do
 		IMAGE_BUILD_REVISION="$2"
 		shift 2
 		;;
-	--image-registry)
-		IMAGE_REGISTRY="$2"
-		shift 2
-		;;
-	--image-name)
-		IMAGE_NAME="$2"
-		shift 2
-		;;
-	--platforms)
-		IMAGE_BUILD_PLATFORMS="$2"
-		shift 2
-		;;
 	*)
 		echo "Unknown option: '$1'"
 		exit 1
@@ -47,17 +47,25 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
-if [ -z "$IMAGE_FORGEJO_VERSION" ] || [ -z "$IMAGE_BUILD_REVISION" ] || [ -z "$IMAGE_REGISTRY" ] || [ -z "$IMAGE_NAME" ] || [ -z "$IMAGE_BUILD_PLATFORMS" ]; then
+if [ -z "$IMAGE_NAME" ] || [ -z "$IMAGE_REGISTRY" ] || [ -z "$IMAGE_BUILD_TARGET_GOARCHS" ] || [ -z "$IMAGE_FORGEJO_VERSION" ] || [ -z "$IMAGE_BUILD_REVISION" ]; then
 	echo "Missing required variables!"
 	exit 1
 fi
 
 IMAGE_REPO="${IMAGE_REGISTRY}/${IMAGE_NAME}"
 
+IMAGE_FORGEJO_VERSION_MAJOR=$(echo "${IMAGE_FORGEJO_VERSION%%-*}" | awk -F. '{print $1}')
+IMAGE_FORGEJO_VERSION_MINOR=$(echo "${IMAGE_FORGEJO_VERSION%%-*}" | awk -F. '{print $2}')
+IMAGE_FORGEJO_VERSION_PATCH=$(echo "${IMAGE_FORGEJO_VERSION%%-*}" | awk -F. '{print $3}')
+
+IMAGE_FORGEJO_VERSION_MAJOR=${IMAGE_FORGEJO_VERSION_MAJOR:-0}
+IMAGE_FORGEJO_VERSION_MINOR=${IMAGE_FORGEJO_VERSION_MINOR:-0}
+IMAGE_FORGEJO_VERSION_PATCH=${IMAGE_FORGEJO_VERSION_PATCH:-0}
+
 IMAGE_TAG_FULL_QUALIFIED="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION}-r${IMAGE_BUILD_REVISION}"
-IMAGE_TAG_IGNORE_BUILD_REVISION="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION}"
-IMAGE_TAG_MAJOR_MINOR="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION%.*}"
-IMAGE_TAG_MAJOR="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION%%.*}"
+IMAGE_TAG_MAJOR_MINOR_PATCH="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION_MAJOR}.${IMAGE_FORGEJO_VERSION_MINOR}.${IMAGE_FORGEJO_VERSION_PATCH}"
+IMAGE_TAG_MAJOR_MINOR="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION_MAJOR}.${IMAGE_FORGEJO_VERSION_MINOR}"
+IMAGE_TAG_MAJOR="${IMAGE_REPO}:${IMAGE_FORGEJO_VERSION_MAJOR}"
 IMAGE_TAG_LATEST="${IMAGE_REPO}:latest"
 
 # ================================
@@ -75,18 +83,27 @@ IMAGE_VCS_REV=$(git rev-parse HEAD)
 LOCAL_MANIFEST="localhost/${IMAGE_NAME}:build"
 
 buildah manifest rm "${LOCAL_MANIFEST}" 2>/dev/null || true
+buildah manifest create "${LOCAL_MANIFEST}"
 
-buildah build \
-	--no-cache \
-	--platform="${IMAGE_BUILD_PLATFORMS}" \
-	--manifest="${LOCAL_MANIFEST}" \
-	--jobs=4 \
-	--timestamp=${IMAGE_VCS_DATE_EPOCH} \
-	--build-arg IMAGE_VCS_DATE=$IMAGE_VCS_DATE \
-	--build-arg IMAGE_VCS_REV=$IMAGE_VCS_REV \
-	--build-arg IMAGE_FORGEJO_VERSION=$IMAGE_FORGEJO_VERSION \
-	--build-arg IMAGE_BUILD_REVISION=$IMAGE_BUILD_REVISION \
-	-f Dockerfile .
+IFS=',' read -ra IMAGE_BUILD_TARGET_GOARCHS <<<"$IMAGE_BUILD_TARGET_GOARCHS"
+for arch in "${IMAGE_BUILD_TARGET_GOARCHS[@]}"; do
+	tag="localhost/${IMAGE_NAME}:build-${arch}"
+
+	buildah build \
+		--no-cache \
+		--jobs=4 \
+		--timestamp=${IMAGE_VCS_DATE_EPOCH} \
+		--build-arg IMAGE_VCS_DATE=$IMAGE_VCS_DATE \
+		--build-arg IMAGE_VCS_REV=$IMAGE_VCS_REV \
+		--build-arg IMAGE_FORGEJO_VERSION=$IMAGE_FORGEJO_VERSION \
+		--build-arg IMAGE_BUILD_REVISION=$IMAGE_BUILD_REVISION \
+		--build-arg IMAGE_BUILD_TARGET_GOARCH=$arch \
+		--format docker \
+		-t "$tag" \
+		-f Dockerfile .
+
+	buildah manifest add --os linux --arch "$arch" "${LOCAL_MANIFEST}" "$tag"
+done
 
 # ================================
 # Push
@@ -96,7 +113,7 @@ if [ "$PUSH" = true ]; then
 
 	for TAG in \
 		"${IMAGE_TAG_FULL_QUALIFIED}" \
-		"${IMAGE_TAG_IGNORE_BUILD_REVISION}" \
+		"${IMAGE_TAG_MAJOR_MINOR_PATCH}" \
 		"${IMAGE_TAG_MAJOR_MINOR}" \
 		"${IMAGE_TAG_MAJOR}" \
 		"${IMAGE_TAG_LATEST}"; do

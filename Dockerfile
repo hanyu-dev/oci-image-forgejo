@@ -17,40 +17,23 @@ RUN set -e && \
 
 WORKDIR /opt/forgejo
 
-ARG TARGETARCH
-
+ARG IMAGE_BUILD_TARGET_GOARCH
 ARG IMAGE_FORGEJO_VERSION
 
-RUN set -e \
-    && \
-    case ${TARGETARCH} in \
-    "amd64")  FORGEJO_ARCH="amd64" \
-    ;; \
-    "arm64")  FORGEJO_ARCH="arm64" \
-    ;; \
-    *)        echo "Unsupported architecture: ${TARGETARCH}"; exit 1; \
-    esac \
-    && \
-    wget -q -O ./forgejo "https://codeberg.org/forgejo/forgejo/releases/download/v${IMAGE_FORGEJO_VERSION}/forgejo-${IMAGE_FORGEJO_VERSION}-linux-${FORGEJO_ARCH}" \
-    && \
-    wget -q -O ./forgejo.asc "https://codeberg.org/forgejo/forgejo/releases/download/v${IMAGE_FORGEJO_VERSION}/forgejo-${IMAGE_FORGEJO_VERSION}-linux-${FORGEJO_ARCH}.asc"
+RUN set -e && \
+    wget -q -O ./forgejo "https://codeberg.org/forgejo/forgejo/releases/download/v${IMAGE_FORGEJO_VERSION}/forgejo-${IMAGE_FORGEJO_VERSION}-linux-${IMAGE_BUILD_TARGET_GOARCH}" && \
+    wget -q -O ./forgejo.asc "https://codeberg.org/forgejo/forgejo/releases/download/v${IMAGE_FORGEJO_VERSION}/forgejo-${IMAGE_FORGEJO_VERSION}-linux-${IMAGE_BUILD_TARGET_GOARCH}.asc"
 
-RUN set -e \
-    && \
-    gpg --keyserver keys.openpgp.org --recv EB114F5E6C0DC2BCDD183550A4B61A2DC5923710 \
-    && \
+RUN set -e && \
+    gpg --keyserver keys.openpgp.org --recv EB114F5E6C0DC2BCDD183550A4B61A2DC5923710 && \
     gpg --verify ./forgejo.asc ./forgejo
 
 FROM docker.io/library/alpine:${IMAGE_ALPINE_VERSION}@sha256:${IMAGE_ALPINE_DIGEST}
 
-ARG SOURCE_DATE_EPOCH
-ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
-
 ARG IMAGE_VCS_DATE
 ARG IMAGE_VCS_REV
-ARG IMAGE_BUILD_REVISION
-
 ARG IMAGE_FORGEJO_VERSION
+ARG IMAGE_BUILD_REVISION
 
 LABEL org.opencontainers.image.title="Forgejo. Beyond coding. We forge." \
     org.opencontainers.image.vendor="Hantong Chen" \
@@ -79,10 +62,8 @@ RUN set -e && \
 ARG UID
 ARG GID
 
-RUN set -e \
-    && \
-    addgroup -g "$GID" git \
-    && \
+RUN set -e && \
+    addgroup -g "$GID" git && \
     adduser -S -H -D -h /opt/forgejo/git -s /bin/bash -u "$UID" -G git git
 
 COPY --from=downloader --chown="${UID}:${GID}" --chmod=775 /opt/forgejo /opt/forgejo
@@ -93,14 +74,10 @@ WORKDIR /opt/forgejo
 
 USER ${UID}:${GID}
 
-RUN set -e \
-    && \
-    mkdir -p /opt/forgejo/custom \
-    && \
-    chmod 775 /opt/forgejo/custom \
-    && \
-    mkdir -p /opt/forgejo/data \
-    && \
+RUN set -e && \
+    mkdir -p /opt/forgejo/custom && \
+    chmod 775 /opt/forgejo/custom && \
+    mkdir -p /opt/forgejo/data && \
     chmod 775 /opt/forgejo/data
 
 ENTRYPOINT ["/opt/forgejo/forgejo"]
