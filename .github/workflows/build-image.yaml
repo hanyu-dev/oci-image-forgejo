@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - Dockerfile
-      - build.sh
-      - .github/workflows/build-image.yaml
   workflow_dispatch:
 
 env:
