@@ -54,7 +54,7 @@ RUN set -e && \
     git=2.54.0-r0 \
     git-lfs=3.7.1-r1 \
     gnupg=2.4.9-r1 \
-    openssh-client=10.3_p1-r0
+    openssh-client=10.3_p1-r1
 
 RUN set -e && \
     rm -rf /var/lib/apk/tmp/* /var/cache/apk/* /var/log/apk.log
