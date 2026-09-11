@@ -52,7 +52,7 @@ RUN set -e && \
     bash=5.3.9-r1 \
     ca-certificates=20260611-r0 \
     git=2.54.0-r0 \
-    git-lfs=3.7.1-r0 \
+    git-lfs=3.7.1-r1 \
     gnupg=2.4.9-r1 \
     openssh-client=10.3_p1-r0
 
