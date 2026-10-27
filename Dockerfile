@@ -8,7 +8,7 @@ FROM docker.io/library/alpine:${IMAGE_ALPINE_VERSION}@sha256:${IMAGE_ALPINE_DIGE
 
 RUN set -e && \
     apk add --no-cache \
-    ca-certificates=20260909-r0 \
+    ca-certificates=20261020-r0 \
     wget=1.25.0-r3 \
     gnupg=2.4.9-r1
 
@@ -50,7 +50,7 @@ LABEL org.opencontainers.image.title="Forgejo. Beyond coding. We forge." \
 RUN set -e && \
     apk add --no-cache \
     bash=5.3.9-r1 \
-    ca-certificates=20260909-r0 \
+    ca-certificates=20261020-r0 \
     git=2.54.0-r0 \
     git-lfs=3.7.1-r1 \
     gnupg=2.4.9-r1 \
