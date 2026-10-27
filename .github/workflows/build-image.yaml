@@ -13,7 +13,7 @@ env:
   IMAGE_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
   IMAGE_BUILD_TARGET_GOARCHS: amd64,arm64
   # See https://codeberg.org/forgejo/forgejo/releases
-  IMAGE_FORGEJO_VERSION: 17.0.0
+  IMAGE_FORGEJO_VERSION: 17.0.1
   IMAGE_BUILD_REVISION: 0
   # See https://quay.io/repository/buildah/stable?tab=tags
   IMAGE_BUILDAH_VERSION: 1.43.5-immutable
