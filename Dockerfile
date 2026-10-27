@@ -1,10 +1,10 @@
 ARG IMAGE_ALPINE_VERSION=3.24.3
 ARG IMAGE_ALPINE_DIGEST=be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 
-ARG UID=65532
-ARG GID=65532
-
 FROM docker.io/library/alpine:${IMAGE_ALPINE_VERSION}@sha256:${IMAGE_ALPINE_DIGEST} AS downloader
+
+ARG IMAGE_VCS_DATE_EPOCH
+ENV SOURCE_DATE_EPOCH=${IMAGE_VCS_DATE_EPOCH}
 
 RUN set -e && \
     apk add --no-cache \
@@ -29,6 +29,9 @@ RUN set -e && \
     gpg --verify ./forgejo.asc ./forgejo
 
 FROM docker.io/library/alpine:${IMAGE_ALPINE_VERSION}@sha256:${IMAGE_ALPINE_DIGEST}
+
+ARG IMAGE_VCS_DATE_EPOCH
+ENV SOURCE_DATE_EPOCH=${IMAGE_VCS_DATE_EPOCH}
 
 ARG IMAGE_VCS_DATE
 ARG IMAGE_VCS_REV
@@ -59,8 +62,8 @@ RUN set -e && \
 RUN set -e && \
     rm -rf /var/lib/apk/tmp/* /var/cache/apk/* /var/log/apk.log
 
-ARG UID
-ARG GID
+ARG UID=65532
+ARG GID=65532
 
 RUN set -e && \
     addgroup -g "$GID" git && \
