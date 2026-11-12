@@ -14,7 +14,7 @@ env:
   IMAGE_BUILD_TARGET_GOARCHS: amd64,arm64
   # See https://codeberg.org/forgejo/forgejo/releases
   IMAGE_FORGEJO_VERSION: 17.0.1
-  IMAGE_BUILD_REVISION: 0
+  IMAGE_BUILD_REVISION: 1
   # See https://quay.io/repository/buildah/stable?tab=tags
   IMAGE_BUILDAH_VERSION: 1.45.1-immutable
   IMAGE_BUILDAH_DIGEST: e5a33092657823b0830186ea525054cf4cdeef29b6a44833444c59d86f561f29
