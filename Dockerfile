@@ -54,7 +54,7 @@ RUN set -e && \
     apk add --no-cache \
     bash=5.3.9-r1 \
     ca-certificates=20261020-r0 \
-    git=2.54.0-r0 \
+    git=2.54.1-r0 \
     git-lfs=3.7.1-r2 \
     gnupg=2.4.9-r1 \
     openssh-client=10.3_p1-r1
